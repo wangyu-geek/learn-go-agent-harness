@@ -1,54 +1,53 @@
-# s05: Agent 循环
+# s04: 工具接口
 
-> _"没有 Agent Loop，工具只是摆设"_
+> _"加一个工具，只加一个 handler"_
 
-本课展示如何实现 Agent 循环（ReAct），让 LLM 决定何时调用工具。
+本课展示如何定义工具接口，实现工具的标准化管理。
 
 ## 运行
 ```bash
-cd go/s05-agent-loop
-export OPENAI_API_KEY=your-key
+cd go/s04-tool-interface
 go run main.go
 ```
 
 ## 代码结构
 ```
-s05-agent-loop/
+s04-tool-interface/
 ├── main.go      # 主程序
-├── agent.go     # Agent 结构
-└── README.md     # 本文件
+├── tool.go      # 工具接口
+└── README.md    # 本文件
 ```
 
 ## 核心代码
 ```go
-// Agent 循环
-func (a *Agent) Run(ctx, prompt) (string, error) {
-    messages := []Message{{Role: "user", Content: prompt}}
-    
-    for i := 0; i < maxIterations; i++ {
-        // 1. 调用 LLM
-        response := a.client.CreateMessage(ctx, messages, tools)
-        
-        // 2. 检查是否需要工具
-        if response.FinishReason == "tool_calls" {
-            // 3. 执行工具
-            for _, call := response.ToolCalls {
-                result := a.tools[call.Name].Execute(call.Arguments)
-                messages = append(messages, ToolResult(call.ID, result))
-            }
-            continue  // 继续循环
-        }
-        
-        // 4. 返回最终响应
-        return response.Content
-    }
+// 工具接口
+type Tool interface {
+    Name() string
+    Description() string
+    InputSchema() map[string]interface{}
+    Execute(ctx, input) (*ToolResult, error)
 }
+
+// 工具注册表
+type ToolRegistry struct {
+    tools map[string]Tool
+}
+
+func (r *ToolRegistry) Register(tool Tool)
+func (r *ToolRegistry) Get(name string) (Tool, bool)
 ```
 
+## 已实现工具
+| 工具 | 功能 |
+|------|------|
+| bash | 执行 shell 命令 |
+| read | 读取文件 |
+| write | 写入文件 |
+
 ## 学习要点
-1. **ReAct 模式**：Reasoning + Acting
-2. **工具调用检测**：`finish_reason == "tool_calls"`
-3. **消息历史**：工具结果追加到历史
+1. **接口定义**：Tool 接口统一所有工具
+2. **JSON Schema**：定义参数结构
+3. **注册表模式**：统一管理工具
 
 ## 下一课
-[s06-multi-tools](../s06-multi-tools) - 多工具系统
+[s05-agent-loop](../s05-agent-loop) - Agent 循环

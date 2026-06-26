@@ -1,60 +1,54 @@
-# s06: 多工具系统
+# s05: Agent 循环
 
-> _"多工具并行，效率翻倍"_
+> _"没有 Agent Loop，工具只是摆设"_
 
-本课展示如何构建完整的多工具系统，支持并行执行。
+本课展示如何实现 Agent 循环（ReAct），让 LLM 决定何时调用工具。
 
 ## 运行
 ```bash
-cd go/s06-multi-tools
+cd go/s05-agent-loop
 export OPENAI_API_KEY=your-key
 go run main.go
 ```
 
 ## 代码结构
 ```
-s06-multi-tools/
-├── main.go        # 主程序
-├── agent.go       # Agent 结构
-├── registry.go    # 工具注册表
-└── README.md       # 本文件
+s05-agent-loop/
+├── main.go      # 主程序
+├── agent.go     # Agent 结构
+└── README.md     # 本文件
 ```
 
 ## 核心代码
 ```go
-// 并行执行工具
-func (r *ToolRegistry) ExecuteParallel(ctx, calls []ToolCall) map[string]*ToolResult {
-    results := make(map[string]*ToolResult)
-    var wg sync.WaitGroup
+// Agent 循环
+func (a *Agent) Run(ctx, prompt) (string, error) {
+    messages := []Message{{Role: "user", Content: prompt}}
     
-    for _, call := range calls {
-        wg.Add(1)
-        go func(c ToolCall) {
-            defer wg.Done()
-            tool := r.tools[c.Name]
-            result := tool.Execute(ctx, c.Arguments)
-            results[c.ID] = result
-        }(call)
+    for i := 0; i < maxIterations; i++ {
+        // 1. 调用 LLM
+        response := a.client.CreateMessage(ctx, messages, tools)
+        
+        // 2. 检查是否需要工具
+        if response.FinishReason == "tool_calls" {
+            // 3. 执行工具
+            for _, call := response.ToolCalls {
+                result := a.tools[call.Name].Execute(call.Arguments)
+                messages = append(messages, ToolResult(call.ID, result))
+            }
+            continue  // 继续循环
+        }
+        
+        // 4. 返回最终响应
+        return response.Content
     }
-    
-    wg.Wait()
-    return results
 }
 ```
 
-## 已实现工具
-| 工具 | 功能 |
-|------|------|
-| bash | 执行 shell 命令 |
-| read | 读取文件 |
-| write | 写入文件 |
-| glob | 搜索文件 |
-| grep | 搜索文本 |
-
 ## 学习要点
-1. **注册表增强**：线程安全的工具管理
-2. **并行执行**：goroutine + WaitGroup
-3. **结果聚合**：收集所有工具执行结果
+1. **ReAct 模式**：Reasoning + Acting
+2. **工具调用检测**：`finish_reason == "tool_calls"`
+3. **消息历史**：工具结果追加到历史
 
 ## 下一课
-[s07-config](../s07-config) - 配置管理
+[s06-multi-tools](../s06-multi-tools) - 多工具系统

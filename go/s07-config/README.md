@@ -1,54 +1,50 @@
-# s08: TUI 交互界面
+# s07: 配置管理
 
-> _"界面要好看，bubbletea 是首选"_
+> _"配置要灵活，环境变量优先"_
 
-本课展示如何使用 bubbletea 构建终端交互界面。
+本课展示如何使用 viper 管理配置。
 
 ## 运行
 ```bash
-cd go/s08-tui
+cd go/s07-config
 go run main.go
 ```
 
 ## 代码结构
 ```
-s08-tui/
+s07-config/
 ├── main.go      # 主程序
 └── README.md     # 本文件
 ```
 
 ## 核心代码
 ```go
-// Bubbletea Model
-type model struct {
-    messages []Message
-    input    string
+// 配置结构
+type Config struct {
+    Provider string
+    Model    string
+    APIKeys  APIKeysConfig
+    Agent   AgentConfig
 }
 
-// Update
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-    switch msg := msg.(type) {
-    case tea.KeyMsg:
-        // 处理键盘输入
-    case tea.WindowSizeMsg:
-        // 处理窗口大小变化
-    }
-}
+// 初始化
+viper.SetDefault("provider", "openai")
+viper.SetEnvPrefix("AGENT")
+viper.AutomaticEnv()
 
-// View
-func (m model) View() string {
-    // 渲染界面
-}
+// 环境变量覆盖
+// AGENT_PROVIDER=anthropic go run main.go
 ```
 
-## 学习要点
-1. **Bubbletea 框架**：Model-Update-View 模式
-2. **lipgloss 样式**：美化终端输出
-3. **事件处理**：键盘输入、窗口大小
+## 配置优先级
+1. 代码默认值（最低）
+2. 配置文件
+3. 环境变量（最高）
 
-## 操作
-- **Enter**: 发送消息
-- **Esc/Ctrl+C**: 退出
+## 学习要点
+1. **viper 库**：配置管理
+2. **环境变量**：优先级最高
+3. **配置文件**：YAML/JSON 支持
 
 ## 下一课
-[s09-prompt-system](../s09-prompt-system) - Prompt 系统
+[s08-tui](../s08-tui) - TUI 界面

@@ -1,53 +1,55 @@
-# s04: 工具接口
+# s03: 流式响应
 
-> _"加一个工具，只加一个 handler"_
+> _"流式输出，体验更好"_
 
-本课展示如何定义工具接口，实现工具的标准化管理。
+本课展示如何处理流式响应（SSE），实现实时输出效果。
 
 ## 运行
 ```bash
-cd go/s04-tool-interface
+cd go/s03-streaming
+export OPENAI_API_KEY=your-key
 go run main.go
 ```
 
 ## 代码结构
 ```
-s04-tool-interface/
-├── main.go      # 主程序
-├── tool.go      # 工具接口
-└── README.md    # 本文件
+s03-streaming/
+├── main.go       # 主程序
+├── stream.go      # 流式处理
+└── README.md      # 本文件
 ```
 
 ## 核心代码
 ```go
-// 工具接口
-type Tool interface {
-    Name() string
-    Description() string
-    InputSchema() map[string]interface{}
-    Execute(ctx, input) (*ToolResult, error)
+// 流式事件
+type StreamEvent struct {
+    Type    string  // "content", "done", "error"
+    Content string
 }
 
-// 工具注册表
-type ToolRegistry struct {
-    tools map[string]Tool
+// 流式客户端
+func (c *StreamClient) CompleteStream(ctx, messages) <-chan StreamEvent {
+    events := make(chan StreamEvent, 100)
+    
+    go func() {
+        defer close(events)
+        // 解析 SSE 流...
+    }()
+    
+    return events
 }
 
-func (r *ToolRegistry) Register(tool Tool)
-func (r *ToolRegistry) Get(name string) (Tool, bool)
+// 消费
+for event := range client.CompleteStream(ctx, messages) {
+    fmt.Print(event.Content)  // 实时输出
+}
 ```
 
-## 已实现工具
-| 工具 | 功能 |
-|------|------|
-| bash | 执行 shell 命令 |
-| read | 读取文件 |
-| write | 写入文件 |
-
 ## 学习要点
-1. **接口定义**：Tool 接口统一所有工具
-2. **JSON Schema**：定义参数结构
-3. **注册表模式**：统一管理工具
+
+1. **SSE 格式**：`data: {...}` 形式
+2. **Go Channel**：goroutine + channel 实现异步
+3. **实时输出**：收到即打印
 
 ## 下一课
-[s05-agent-loop](../s05-agent-loop) - Agent 循环
+[s04-tool-interface](../s04-tool-interface) - 工具接口

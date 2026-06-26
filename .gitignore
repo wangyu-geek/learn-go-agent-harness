@@ -18,6 +18,7 @@ go/s09-prompt-system/s09-prompt-system
 go/s10-coordinator/s10-coordinator
 go/s11-memory/s11-memory
 go/s12-mcp/s12-mcp
+go/**/bin
 
 # Agent memory storage
 go/**/agent-memory/
